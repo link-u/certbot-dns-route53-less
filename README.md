@@ -4,7 +4,7 @@
 
 - Ensure your domain is already managed by route53
 - Ensure you have IAM with the policy, described in [examples/sample-aws-policy.json](examples/sample-aws-policy.json).
-  - Note that it requires less privileges than the original dns-route53 plugin.
+  - Note that it requires less privileges than [the original dns-route53 plugin](https://github.com/certbot/certbot/blob/master/certbot-dns-route53/examples/sample-aws-policy.json).
 - Prepare correspondences the hosted zone ids and domains which you want to obtain certificates.
 
 ### Setup
