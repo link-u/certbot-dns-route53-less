@@ -1,9 +1,11 @@
-## Route53 plugin for Let's Encrypt client
+## Route53 plugin for Let's Encrypt client which requires less privileges
 
 ### Before you start
 
-It's expected that the root hosted zone for the domain in question already
-exists in your account.
+- Ensure your domain is already managed by route53
+- Ensure you have IAM with the policy, described in [examples/sample-aws-policy.json](examples/sample-aws-policy.json).
+  - Note that it requires less privileges than the original dns-route53 plugin.
+- Prepare correspondences the hosted zone ids and domains which you want to obtain certificates.
 
 ### Setup
 
@@ -29,7 +31,9 @@ via `.aws/credentials`. Check out
 To generate a certificate:
 ```
 certbot certonly \
-  -n --agree-tos --email DEVOPS@COMPANY.COM \
-  --dns-route53 \
-  -d MY.DOMAIN.NAME
+  -n --agree-tos --email DEVOPS@EXAMPLE.COM \
+  --authenticator 'dns-route53-less' \
+  '--dns-route53-less-zone-ids=example.com=(hosted zone id),example.org=(hosted zone id)'
+  -d 'example.com' -d '*.example.com' \
+  -d 'example.org' -d '*.example.org'
 ```

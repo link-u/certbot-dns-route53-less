@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_route53._internal.dns_route53.Authenticator"""
+"""Tests for certbot_dns_route53_less._internal.dns_route53.Authenticator"""
 
 import unittest
 
@@ -19,7 +19,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
     # pylint: disable=protected-access
 
     def setUp(self):
-        from certbot_dns_route53._internal.dns_route53 import Authenticator
+        from certbot_dns_route53_less._internal.dns_route53 import Authenticator
 
         super(AuthenticatorTest, self).setUp()
 
@@ -29,7 +29,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
         os.environ["AWS_SECRET_ACCESS_KEY"] = "dummy_secret_access_key"
 
-        self.auth = Authenticator(self.config, "route53")
+        self.auth = Authenticator(self.config, "route53-less")
 
     def tearDown(self):
         # Remove the dummy credentials from env vars
@@ -125,7 +125,7 @@ class ClientTest(unittest.TestCase):
                             }
 
     def setUp(self):
-        from certbot_dns_route53._internal.dns_route53 import Authenticator
+        from certbot_dns_route53_less._internal.dns_route53 import Authenticator
 
         self.config = mock.MagicMock()
 

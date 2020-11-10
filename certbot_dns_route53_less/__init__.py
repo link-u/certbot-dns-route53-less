@@ -1,5 +1,5 @@
 """
-The `~certbot_dns_route53.dns_route53` plugin automates the process of
+The `~certbot_dns_route53_less.dns_route53` plugin automates the process of
 completing a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and
 subsequently removing, TXT records using the Amazon Web Services Route 53 API.
 
@@ -41,7 +41,6 @@ the required permissions <https://docs.aws.amazon.com/Route53/latest
            {
                "Effect": "Allow",
                "Action": [
-                   "route53:ListHostedZones",
                    "route53:GetChange"
                ],
                "Resource": [

@@ -11,6 +11,7 @@ version = '1.10.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
+    'certbot',
     'boto3',
     'setuptools',
     'zope.interface',
@@ -37,12 +38,12 @@ elif sys.version_info < (3,3):
     install_requires.append('mock')
 
 setup(
-    name='certbot-dns-route53',
+    name='certbot-dns-route53-less',
     version=version,
-    description="Route53 DNS Authenticator plugin for Certbot",
+    description="Route53 DNS Authenticator plugin for Certbot which requires less privileges",
     url='https://github.com/certbot/certbot',
-    author="Certbot Project",
-    author_email='client-dev@letsencrypt.org',
+    author="Certbot Project + Link-U, Inc.",
+    author_email='ryo.hirafuji@link-u.co.jp',
     license='Apache License 2.0',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
     classifiers=[
@@ -71,8 +72,8 @@ setup(
     keywords=['certbot', 'route53', 'aws'],
     entry_points={
         'certbot.plugins': [
-            'dns-route53 = certbot_dns_route53._internal.dns_route53:Authenticator',
-            'certbot-route53:auth = certbot_dns_route53.authenticator:Authenticator'
+            'dns-route53-less = certbot_dns_route53_less._internal.dns_route53:Authenticator',
+            'certbot-route53-less:auth = certbot_dns_route53_less.authenticator:Authenticator'
         ],
     },
 )

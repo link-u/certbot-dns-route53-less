@@ -18,7 +18,7 @@ from certbot.plugins import dns_common
 logger = logging.getLogger(__name__)
 
 INSTRUCTIONS = (
-    "To use certbot-dns-route53, configure credentials as described at "
+    "To use certbot-dns-route53-less, configure credentials as described at "
     "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "  # pylint: disable=line-too-long
     "and add the necessary permissions for Route53 access.")
 
@@ -26,7 +26,7 @@ INSTRUCTIONS = (
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
-    """Route53 Authenticator
+    """Route53 Authenticator which requires less privileges
 
     This authenticator solves a DNS01 challenge by uploading the answer to AWS
     Route53.
@@ -34,7 +34,15 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     description = ("Obtain certificates using a DNS TXT record (if you are using AWS Route53 for "
                    "DNS).")
+
     ttl = 10
+
+    @classmethod
+    def add_parser_arguments(cls, add, default_propagation_seconds=10):  # pylint: disable=arguments-differ
+        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=default_propagation_seconds)
+        add('zone-ids',
+            type=str,
+            help='correspondences between zone-id and domain-name')
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -80,19 +88,17 @@ class Authenticator(dns_common.DNSAuthenticator):
            That is, the id for the zone whose name is the longest parent of the
            domain.
         """
-        paginator = self.r53.get_paginator("list_hosted_zones")
-        zones = []
-        target_labels = domain.rstrip(".").split(".")
-        for page in paginator.paginate():
-            for zone in page["HostedZones"]:
-                if zone["Config"]["PrivateZone"]:
-                    continue
+        zone_ids = dict()
+        for zone_info in self.conf('zone-ids').split(','):
+            zone_infos = zone_info.split('=')
+            domain = zone_infos[0].strip()
+            zone_id = zone_infos[1].strip()
+            zone_ids[domain] = zone_id
 
-                candidate_labels = zone["Name"].rstrip(".").split(".")
-                if candidate_labels == target_labels[-len(candidate_labels):]:
-                    zones.append((zone["Name"], zone["Id"]))
+        domain = '.'.join(domain.split('.')[-2:])
+        zone = zone_ids[domain]
 
-        if not zones:
+        if not zone:
             raise errors.PluginError(
                 "Unable to find a Route53 hosted zone for {0}".format(domain)
             )
@@ -101,8 +107,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         # length, this puts them in an order like:
         # ["foo.bar.baz.com", "bar.baz.com", "baz.com", "com"]
         # And then we choose the first one, which will be the most specific.
-        zones.sort(key=lambda z: len(z[0]), reverse=True)
-        return zones[0][1]
+        return zone
 
     def _change_txt_record(self, action, validation_domain_name, validation):
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
