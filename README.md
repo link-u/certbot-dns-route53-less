@@ -33,7 +33,7 @@ To generate a certificate:
 certbot certonly \
   -n --agree-tos --email DEVOPS@EXAMPLE.COM \
   --authenticator 'dns-route53-less' \
-  '--dns-route53-less-zone-ids=example.com=(hosted zone id),example.org=(hosted zone id)'
+  --dns-route53-less-zone-ids 'example.com=(hosted zone id),example.org=(hosted zone id)'
   -d 'example.com' -d '*.example.com' \
   -d 'example.org' -d '*.example.org'
 ```
