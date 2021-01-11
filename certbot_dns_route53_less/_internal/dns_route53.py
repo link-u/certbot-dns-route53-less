@@ -95,8 +95,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             zone_id = zone_infos[1].strip()
             zone_ids[zone_domain] = zone_id
 
-        domain = '.'.join(domain.split('.')[-2:])
-        zone = zone_ids[domain]
+        zone_domain = '.'.join(domain.split('.')[1:])
+        zone = zone_ids[zone_domain]
 
         if not zone:
             raise errors.PluginError(
