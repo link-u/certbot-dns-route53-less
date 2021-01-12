@@ -91,12 +91,12 @@ class Authenticator(dns_common.DNSAuthenticator):
         zone_ids = dict()
         for zone_info in self.conf('zone-ids').split(','):
             zone_infos = zone_info.split('=')
-            domain = zone_infos[0].strip()
+            zone_domain = zone_infos[0].strip()
             zone_id = zone_infos[1].strip()
-            zone_ids[domain] = zone_id
+            zone_ids[zone_domain] = zone_id
 
-        domain = '.'.join(domain.split('.')[-2:])
-        zone = zone_ids[domain]
+        requested_domain = '.'.join(domain.split('.')[1:])
+        zone = zone_ids[requested_domain]
 
         if not zone:
             raise errors.PluginError(
