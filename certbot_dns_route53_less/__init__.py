@@ -7,12 +7,13 @@ subsequently removing, TXT records using the Amazon Web Services Route 53 API.
 Named Arguments
 ---------------
 
-========================================  =====================================
-``--dns-route53-propagation-seconds``     The number of seconds to wait for DNS
-                                          to propagate before asking the ACME
-                                          server to verify the DNS record.
-                                          (Default: 10)
-========================================  =====================================
+==========================================  =====================================
+``--dns-route53-less-zone-ids``             Comma separated ``domain=zone-id``
+                                            pairs (e.g.
+                                            ``example.com=Z123,example.org=Z456``).
+                                            The plugin waits until Route53
+                                            reports the change as ``INSYNC``.
+==========================================  =====================================
 
 
 Credentials
@@ -20,7 +21,6 @@ Credentials
 Use of this plugin requires a configuration file containing Amazon Web Sevices
 API credentials for an account with the following permissions:
 
-* ``route53:ListHostedZones``
 * ``route53:GetChange``
 * ``route53:ChangeResourceRecordSets``
 
@@ -93,27 +93,11 @@ credentials <https://boto3.readthedocs.io/en/latest/guide/configuration.html
 Examples
 --------
 .. code-block:: bash
-   :caption: To acquire a certificate for ``example.com``
+   :caption: To acquire a certificate for ``example.com`` and ``*.example.com``
 
    certbot certonly \\
-     --dns-route53 \\
-     -d example.com
-
-.. code-block:: bash
-   :caption: To acquire a single certificate for both ``example.com`` and
-             ``www.example.com``
-
-   certbot certonly \\
-     --dns-route53 \\
+     --authenticator dns-route53-less \\
+     --dns-route53-less-zone-ids 'example.com=ZONEID' \\
      -d example.com \\
-     -d www.example.com
-
-.. code-block:: bash
-   :caption: To acquire a certificate for ``example.com``, waiting 30 seconds
-             for DNS propagation
-
-   certbot certonly \\
-     --dns-route53 \\
-     --dns-route53-propagation-seconds 30 \\
-     -d example.com
+     -d '*.example.com'
 """
