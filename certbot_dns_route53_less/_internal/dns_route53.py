@@ -2,17 +2,15 @@
 import collections
 import logging
 import time
+from typing import DefaultDict
+from typing import Dict
+from typing import List
 
 import boto3
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
-import zope.interface
 
-from acme.magic_typing import DefaultDict
-from acme.magic_typing import Dict
-from acme.magic_typing import List
 from certbot import errors
-from certbot import interfaces
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
@@ -23,8 +21,6 @@ INSTRUCTIONS = (
     "and add the necessary permissions for Route53 access.")
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
     """Route53 Authenticator which requires less privileges
 
@@ -47,7 +43,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
-        self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
+        self._resource_records: DefaultDict[str, List[Dict[str, str]]] = collections.defaultdict(list)
 
     def more_info(self):  # pylint: disable=missing-function-docstring
         return "Solve a DNS01 challenge using AWS Route53"
@@ -64,7 +60,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         try:
             change_ids = [
                 self._change_txt_record("UPSERT",
-                  achall.validation_domain_name(achall.domain),
+                  achall.validation_domain_name(achall.identifier.value),
                   achall.validation(achall.account_key))
                 for achall in achalls
             ]
@@ -88,25 +84,22 @@ class Authenticator(dns_common.DNSAuthenticator):
            That is, the id for the zone whose name is the longest parent of the
            domain.
         """
-        zone_ids = dict()
-        for zone_info in self.conf('zone-ids').split(','):
-            zone_infos = zone_info.split('=')
-            zone_domain = zone_infos[0].strip()
-            zone_id = zone_infos[1].strip()
-            zone_ids[zone_domain] = zone_id
+        zone_ids = {}
+        for zone_info in (self.conf('zone-ids') or '').split(','):
+            if '=' not in zone_info:
+                continue
+            zone_domain, zone_id = zone_info.split('=', 1)
+            zone_ids[zone_domain.strip()] = zone_id.strip()
 
+        # validation_domain_name は "_acme-challenge.<domain>" なので先頭のラベルを外す
         requested_domain = '.'.join(domain.split('.')[1:])
-        zone = zone_ids[requested_domain]
+        zone = zone_ids.get(requested_domain)
 
         if not zone:
             raise errors.PluginError(
-                "Unable to find a Route53 hosted zone for {0}".format(domain)
+                "Unable to find a Route53 hosted zone for {0} in --dns-route53-less-zone-ids".format(domain)
             )
 
-        # Order the zones that are suffixes for our desired to domain by
-        # length, this puts them in an order like:
-        # ["foo.bar.baz.com", "bar.baz.com", "baz.com", "com"]
-        # And then we choose the first one, which will be the most specific.
         return zone
 
     def _change_txt_record(self, action, validation_domain_name, validation):

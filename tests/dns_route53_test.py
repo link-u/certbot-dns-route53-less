@@ -1,13 +1,10 @@
 """Tests for certbot_dns_route53_less._internal.dns_route53.Authenticator"""
 
 import unittest
+from unittest import mock
 
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os
@@ -92,38 +89,6 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 class ClientTest(unittest.TestCase):
     # pylint: disable=protected-access
 
-    PRIVATE_ZONE = {
-                        "Id": "BAD-PRIVATE",
-                        "Name": "example.com",
-                        "Config": {
-                            "PrivateZone": True
-                        }
-                    }
-
-    EXAMPLE_NET_ZONE = {
-                            "Id": "BAD-WRONG-TLD",
-                            "Name": "example.net",
-                            "Config": {
-                                "PrivateZone": False
-                            }
-                        }
-
-    EXAMPLE_COM_ZONE = {
-                            "Id": "EXAMPLE",
-                            "Name": "example.com",
-                            "Config": {
-                                "PrivateZone": False
-                            }
-                        }
-
-    FOO_EXAMPLE_COM_ZONE = {
-                                "Id": "FOO",
-                                "Name": "foo.example.com",
-                                "Config": {
-                                    "PrivateZone": False
-                                }
-                            }
-
     def setUp(self):
         from certbot_dns_route53_less._internal.dns_route53 import Authenticator
 
@@ -141,61 +106,30 @@ class ClientTest(unittest.TestCase):
         del os.environ["AWS_SECRET_ACCESS_KEY"]
 
     def test_find_zone_id_for_domain(self):
-        self.client.r53.get_paginator = mock.MagicMock()
-        self.client.r53.get_paginator().paginate.return_value = [
-            {
-                "HostedZones": [
-                    self.EXAMPLE_NET_ZONE,
-                    self.EXAMPLE_COM_ZONE,
-                ]
-            }
-        ]
+        self.config.route53_zone_ids = "example.net=NET, example.com = EXAMPLE"
 
-        result = self.client._find_zone_id_for_domain("foo.example.com")
+        result = self.client._find_zone_id_for_domain("_acme-challenge.example.com")
         self.assertEqual(result, "EXAMPLE")
 
-    def test_find_zone_id_for_domain_pagination(self):
-        self.client.r53.get_paginator = mock.MagicMock()
-        self.client.r53.get_paginator().paginate.return_value = [
-            {
-                "HostedZones": [
-                    self.PRIVATE_ZONE,
-                    self.EXAMPLE_COM_ZONE,
-                ]
-            },
-            {
-                "HostedZones": [
-                    self.PRIVATE_ZONE,
-                    self.FOO_EXAMPLE_COM_ZONE,
-                ]
-            }
-        ]
+    def test_find_zone_id_for_domain_subdomain_zone(self):
+        self.config.route53_zone_ids = "example.com=EXAMPLE,foo.example.com=FOO"
 
-        result = self.client._find_zone_id_for_domain("foo.example.com")
+        result = self.client._find_zone_id_for_domain("_acme-challenge.foo.example.com")
         self.assertEqual(result, "FOO")
 
     def test_find_zone_id_for_domain_no_results(self):
-        self.client.r53.get_paginator = mock.MagicMock()
-        self.client.r53.get_paginator().paginate.return_value = []
+        self.config.route53_zone_ids = "example.net=NET"
 
         self.assertRaises(errors.PluginError,
                           self.client._find_zone_id_for_domain,
-                          "foo.example.com")
+                          "_acme-challenge.example.com")
 
-    def test_find_zone_id_for_domain_no_correct_results(self):
-        self.client.r53.get_paginator = mock.MagicMock()
-        self.client.r53.get_paginator().paginate.return_value = [
-            {
-                "HostedZones": [
-                    self.PRIVATE_ZONE,
-                    self.EXAMPLE_NET_ZONE,
-                ]
-            },
-        ]
+    def test_find_zone_id_for_domain_not_configured(self):
+        self.config.route53_zone_ids = None
 
         self.assertRaises(errors.PluginError,
                           self.client._find_zone_id_for_domain,
-                          "foo.example.com")
+                          "_acme-challenge.example.com")
 
     def test_change_txt_record(self):
         self.client._find_zone_id_for_domain = mock.MagicMock()
